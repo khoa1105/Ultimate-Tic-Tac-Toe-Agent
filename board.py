@@ -66,12 +66,11 @@ class UltimateTicTacToe():
 
 		return 0
 
-	def no_space(self, board):
-		for k in range(9):
-			for i in range(3):
-				for j in range(3):
-					if board[k][i][j] == 0:
-						return False
+	def no_space(self):
+		for i in range(3):
+			for j in range(3):
+				if self._board[self._next_grid-1][i][j] == 0:
+					return False
 		return True
 
 	def terminal(self, board):
@@ -81,7 +80,7 @@ class UltimateTicTacToe():
 				return 1
 			elif victory == 2:
 				return 2
-		if self.no_space(board):
+		if self.no_space():
 			return 3
 		return 0
 
@@ -99,16 +98,17 @@ class UltimateTicTacToe():
 
 		self._board[self._next_grid-1][row][column] = 1
 		self._next_grid = move[0]
+		return 1
 
 	def step(self, move):
 		row = (move-1) // 3
 		column = move - row*3 - 1
 		
 		#O moves
-		#if illegal move
-		if self._board[self._next_grid-1][row][column] == 1 or self._board[self._next_grid-1][row][column] == 2:
-			reward = -100
-			done = 1
+		#if illegal move, ignore and return the same state
+		if move < 1 or move > 9 or self._board[self._next_grid-1][row][column] == 1 or self._board[self._next_grid-1][row][column] == 2:
+			reward = 0
+			done = False
 			return self.getState(), reward, done
 		else:
 			self._board[self._next_grid-1][row][column] = 2
@@ -130,11 +130,19 @@ class UltimateTicTacToe():
 			return self.getState(), reward, done
 		
 		#X move
-		self.play()
+		valid_move = self.play()
+		if valid_move == 0:
+			reward = 0
+			done = True
+			print("BOT ERROR!")
+			return self.getState(), reward, done
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)
-		if terminal == 1:
+		if terminal == 0:
+			done = False
+			reward = 0
+		elif terminal == 1:
 			done = True
 			reward = -10
 		elif terminal == 2:
@@ -143,7 +151,5 @@ class UltimateTicTacToe():
 		elif terminal == 3:
 			done = True
 			reward = 0
-		elif terminal == 0:
-			done = False
-			reward = 0
+
 		return self.getState(), reward, done

@@ -13,7 +13,7 @@ import os
 #Neural net architecture
 def init_model():
 	model = Sequential()
-	model.add(Dense(64, activation="relu", input_dim = 82))
+	model.add(Dense(512, activation="relu", input_dim = 82))
 	model.add(Dense(9, activation="linear"))
 	model.compile(loss="mse", optimizer=Adam(lr=0.001))
 	return model
@@ -104,18 +104,31 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 			file = open("TTTEpisodes.txt", "w")
 			file.write(str(i))
 			file.close()
-
 		#For every 1k episodes, calculate the avg reward and train the model
 		if i % 1000 == 0:
 			#Caculating
 			if len(rewards) != 0:
 				total_reward = 0
+				wins = 0
+				draws = 0
+				loses = 0
 				for rw in rewards:
 					total_reward += rw
-				avg_reward = (total_reward * 1.0) / len(rewards)
-				rewards.clear()
+					if rw == 10:
+						wins += 1
+					elif rw == 0:
+						draws += 1
+					elif rw == -10:
+						loses += 1
+				avg_reward = (total_reward * 1.0) / len(rewards)   
+				#Save reward
+				file = open("TTTReward.txt", "w")
+				file.write(str(avg_reward))
+				file.close()
 				#Print messages
 				print("Episode %d/%d\nAvg reward last 1000 episodes: %.3f\nCurrent Exp Memory Size: %d\nEpsilon: %.3f" % (i, num_episodes, avg_reward, len(experiences), epsilon))
+				print("Wins: %d  Draws: %d  Loses: %d" % (wins, draws, loses))
+				rewards.clear()  
 			#Train the model
 			if len(experiences) != 0:
 				train_model(model,gamma, 9, experiences)
@@ -129,11 +142,11 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 		for t in itertools.count():
 			state = np.asarray(state).reshape(1,len(state))
 			action = epsilon_greedy(model, 9 , epsilon, state)
-			next_state, reward, done = env.step(action)
+			next_state, reward, done = env.step(action + 1)
 			#Save experience in experience memory
 			experiences.append([state, action, reward, done , next_state])
-			rewards.append(reward)
 			if done:
+				rewards.append(reward)
 				break
 			#Move to next state
 			state = next_state
@@ -141,7 +154,7 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 
 env = UltimateTicTacToe()
 player = init_model()
-episodes = 100000
+episodes = 400000
 
 DeepQLearning(env, episodes)
 
