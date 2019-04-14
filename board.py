@@ -11,6 +11,14 @@ class UltimateTicTacToe():
 			print("Grid %d" % (i+1))
 			print(self._board[i])
 
+	def legalMoves(self):
+		legals = []
+		for i in range(3):
+			for j in range(3):
+				if self._board[self._next_grid-1][i][j] == 0:
+					legals.append(i * 3 + (j+1))
+		return legals
+
 	def getBoard(self):
 		return self._board
 
@@ -85,57 +93,45 @@ class UltimateTicTacToe():
 		return 0
 
 	def play(self):
-		moves = [1,2,3,4,5,6,7,8,9]
-		move = np.random.choice(moves, 1)
-		row = (move[0]-1) // 3
-		column = move[0] - row*3 - 1
+		moves = self.legalMoves()
+		if len(moves) == 0:
+			raise ValueError
+		move = np.random.choice(moves, 1)[0]
 
-		while self._board[self._next_grid-1][row][column] != 0:
-			moves.remove(move[0])
-			move = np.random.choice(moves, 1)
-			row = (move[0]-1) // 3
-			column = move[0] - row*3 - 1
+		row = (move-1) // 3
+		column = move - row*3 - 1
 
 		self._board[self._next_grid-1][row][column] = 1
-		self._next_grid = move[0]
-		return 1
+		self._next_grid = move
 
 	def step(self, move):
+		if move < 1 or move > 9:
+			raise ValueError("Move not in range 1-9")
+			
 		row = (move-1) // 3
 		column = move - row*3 - 1
 		
 		#O moves
-		#if illegal move, ignore and return the same state
-		if move < 1 or move > 9 or self._board[self._next_grid-1][row][column] == 1 or self._board[self._next_grid-1][row][column] == 2:
-			reward = 0
-			done = False
-			return self.getState(), reward, done
-		else:
-			self._board[self._next_grid-1][row][column] = 2
-			self._next_grid = move
+		self._board[self._next_grid-1][row][column] = 2
+		self._next_grid = move
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)
 		if terminal == 1:
 			done = True
 			reward = -10
-			return self.getState(), reward, done
+			return self.getState(), reward, done, self.legalMoves()
 		elif terminal == 2:
 			done = True
 			reward = 10
-			return self.getState(), reward, done
+			return self.getState(), reward, done, self.legalMoves()
 		elif terminal == 3:
 			done = True
 			reward = 0
-			return self.getState(), reward, done
+			return self.getState(), reward, done, self.legalMoves()
 		
 		#X move
-		valid_move = self.play()
-		if valid_move == 0:
-			reward = 0
-			done = True
-			print("BOT ERROR!")
-			return self.getState(), reward, done
+		self.play()
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)
@@ -152,4 +148,4 @@ class UltimateTicTacToe():
 			done = True
 			reward = 0
 
-		return self.getState(), reward, done
+		return self.getState(), reward, done, self.legalMoves()

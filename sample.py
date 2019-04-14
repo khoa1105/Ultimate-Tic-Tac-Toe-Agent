@@ -6,6 +6,8 @@
 import socket
 import sys
 import numpy as np
+from keras.models import load_model
+import time
 
 # a board cell can hold:
 #   0 - Empty
@@ -40,14 +42,47 @@ def print_board(board):
     print_board_row(board, 7,8,9,7,8,9)
     print()
 
+def getState(board, curr):
+    state = []
+
+    for i in range(1,10):
+        for j in range(1,10):
+            state.append(board[i][j] / 2)
+
+    state.append(curr / 9)
+    state = np.asarray(state).reshape(1,len(state))
+    return state
+
+def legal(board, curr):
+    legals = []
+    count = 1
+
+    for i in range(1,10):
+            if board[curr][i] == 0:
+                legals.append(count)
+            count += 1
+
+    return legals
+
 # choose a move to play
 def play():
-    # print_board(boards)
+    print_board(boards)
+    print("Current Board: %d" % curr)
 
-    # just play a random move for now
-    n = np.random.randint(1,9)
-    while boards[curr][n] != 0:
-        n = np.random.randint(1,9)
+    model = load_model("TTTAgent.h5")
+    legal_moves = legal(boards, curr)
+    state = getState(boards, curr)
+    Q_values = model.predict(state)
+    print(Q_values)
+    for i in range(Q_values.shape[1]):
+        if (i+1) not in legal_moves:
+            Q_values[0][i] = -10
+    action = np.argmax(Q_values)
+    print(Q_values)
+    n = action + 1
+    print("Legal Moves:", end = " ")
+    print(legal_moves)
+    print("Moved %d\n" % n)
 
     # print("playing", n)
     place(curr, n, 1) #plave(board, move, x/0)

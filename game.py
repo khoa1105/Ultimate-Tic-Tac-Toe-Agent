@@ -23,10 +23,16 @@ def Q_function_approximation(model, state):
 	return model.predict(state, verbose=0)
 
 #Epsilon greedy policy
-def epsilon_greedy(model, nA, epsilon, state):
-	A = np.ones(nA) * (epsilon/nA)
+def epsilon_greedy(model, nA, epsilon, legals, state):
+	A = np.zeros(nA)
 	bestA = np.argmax(Q_function_approximation(model, state))
-	A[bestA] += (1-epsilon)
+	if (bestA+1) not in legals:
+		for move in legals:
+			A[move-1] = 1 / len(legals)
+	else:
+		for move in legals:
+			A[move-1] = epsilon / len(legals)
+		A[bestA] += (1-epsilon)
 	action = np.random.choice(nA, p = A)
 	return action
 
@@ -41,13 +47,15 @@ def train_model(model, gamma, action_space, experiences):
 	exp_action = experiences[0][1]
 	exp_reward = experiences[0][2]
 	exp_done = experiences[0][3]
-	exp_next_state = experiences[0][4]
+	exp_legals = [experiences[0][4]]
+	exp_next_state = experiences[0][5]
 	for i in range(1, len(experiences)):
 		exp_state = np.vstack((exp_state, experiences[i][0]))
 		exp_action = np.vstack((exp_action, experiences[i][1]))
 		exp_reward = np.vstack((exp_reward, experiences[i][2]))
 		exp_done = np.vstack((exp_done, experiences[i][3]))
-		exp_next_state = np.vstack((exp_next_state, experiences[i][4]))
+		exp_legals.append(experiences[i][4])
+		exp_next_state = np.vstack((exp_next_state, experiences[i][5]))
 	#Predict the Q values
 	predicted_Qs = Q_function_approximation(model, exp_state)
 	#TD target
@@ -65,12 +73,21 @@ def train_model(model, gamma, action_space, experiences):
 	for i in range(labels.shape[0]):
 		labels[i][exp_action[i]] = updated_Q[i]
 
+	for i in range(labels.shape[0]):
+		for j in range(labels.shape[1]):
+			if (j+1) not in exp_legals[i]:
+				labels[i][j] = -10
+
+	# for i in range(len(experiences)):
+	# 	print(f"{predicted_Qs[i]} {exp_legals[i]} {labels[i]}")
+	# 	time.sleep(2)
+
 	# for i in range(len(experiences)):
 	# 	if exp_reward[i] == 10:
 	# 		print(f"{predicted_Qs[i]} {exp_reward[i]} {max_Qs_next_state[i]} {updated_Q[i]} {exp_action[i]} {labels[i]}")
 	# 		time.sleep(2)
 	#Fit the model
-	model.fit(exp_state, labels, batch_size = 32, verbose = 1)
+	model.fit(exp_state, labels, batch_size = 32, epochs = 2, verbose = 1)
 	print("\n")
 
 
@@ -98,12 +115,6 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 		#Decay epsilon
 		epsilon = initial_epsilon * (epsilon_decay ** i)
 
-		#For every 10k episodes, save the model
-		if i % 10000 == 0:
-			model.save("TTTAgent.h5")
-			file = open("TTTEpisodes.txt", "w")
-			file.write(str(i))
-			file.close()
 		#For every 1k episodes, calculate the avg reward and train the model
 		if i % 1000 == 0:
 			#Caculating
@@ -128,23 +139,34 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 				#Print messages
 				print("Episode %d/%d\nAvg reward last 1000 episodes: %.3f\nCurrent Exp Memory Size: %d\nEpsilon: %.3f" % (i, num_episodes, avg_reward, len(experiences), epsilon))
 				print("Wins: %d  Draws: %d  Loses: %d" % (wins, draws, loses))
-				rewards.clear()  
+				rewards.clear()
 			#Train the model
 			if len(experiences) != 0:
 				train_model(model,gamma, 9, experiences)
 				#Clear the experiences
 				experiences.clear()
+		#For every 10k episodes, save the model
+		if i % 10000 == 0 and i != start_episode:
+			model.save("TTTAgent.h5")
+			file = open("TTTEpisodes.txt", "w")
+			file.write(str(i))
+			file.close()
+			print("Model Saved!")
 		#Reset game
 		env.reset()
 		state = env.getState()
+		legals = env.legalMoves()
 		
 		#Generate episode
 		for t in itertools.count():
 			state = np.asarray(state).reshape(1,len(state))
-			action = epsilon_greedy(model, 9 , epsilon, state)
-			next_state, reward, done = env.step(action + 1)
+			#Pick a legal action according to epsilon greedy
+			action = epsilon_greedy(model, 9 , epsilon, legals, state)
+			if (action+1) not in legals:
+				raise ValueError("Illegal action")
+			next_state, reward, done, legals = env.step(action + 1)
 			#Save experience in experience memory
-			experiences.append([state, action, reward, done , next_state])
+			experiences.append([state, action, reward, done, legals, next_state])
 			if done:
 				rewards.append(reward)
 				break
@@ -154,7 +176,7 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 
 env = UltimateTicTacToe()
 player = init_model()
-episodes = 400000
+episodes = 200000
 
 DeepQLearning(env, episodes)
 
