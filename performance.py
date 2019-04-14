@@ -16,7 +16,7 @@ def epsilon_greedy(model, nA, epsilon, state):
 	action = np.random.choice(nA, p = A)
 	return action
 
-def performance(env, model, num_episodes = 1000):
+def performance(env, model, num_episodes = 100):
 	print("Testing the agent for %d episodes!" % num_episodes)
 
 	rewards = []
@@ -92,5 +92,5 @@ def show_games(env, model, num_episodes = 10):
 env = UltimateTicTacToe()
 model = load_model("TTTAgent.h5")
 
-#performance(env, model)
-show_games(env, model)
+performance(env, model)
+#show_games(env, model)

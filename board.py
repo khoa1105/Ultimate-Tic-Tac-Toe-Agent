@@ -94,8 +94,6 @@ class UltimateTicTacToe():
 
 	def play(self):
 		moves = self.legalMoves()
-		if len(moves) == 0:
-			raise ValueError
 		move = np.random.choice(moves, 1)[0]
 
 		row = (move-1) // 3
@@ -105,30 +103,37 @@ class UltimateTicTacToe():
 		self._next_grid = move
 
 	def step(self, move):
-		if move < 1 or move > 9:
-			raise ValueError("Move not in range 1-9")
-			
 		row = (move-1) // 3
 		column = move - row*3 - 1
 		
 		#O moves
-		self._board[self._next_grid-1][row][column] = 2
-		self._next_grid = move
+		#if illegal, ignore and return the same state
+		if move < 1 or move > 9 or self._board[self._next_grid-1][row][column] != 0:
+			done = False
+			reward = 0
+			illegal = True
+			return self.getState(), reward, done, illegal
+		else:
+			self._board[self._next_grid-1][row][column] = 2
+			self._next_grid = move
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)
 		if terminal == 1:
 			done = True
 			reward = -10
-			return self.getState(), reward, done, self.legalMoves()
+			illegal = False
+			return self.getState(), reward, done, illegal
 		elif terminal == 2:
 			done = True
 			reward = 10
-			return self.getState(), reward, done, self.legalMoves()
+			illegal = False
+			return self.getState(), reward, done, illegal
 		elif terminal == 3:
 			done = True
 			reward = 0
-			return self.getState(), reward, done, self.legalMoves()
+			illegal = False
+			return self.getState(), reward, done, illegal
 		
 		#X move
 		self.play()
@@ -138,14 +143,17 @@ class UltimateTicTacToe():
 		if terminal == 0:
 			done = False
 			reward = 0
+			illegal = False
 		elif terminal == 1:
 			done = True
 			reward = -10
+			illegal = False
 		elif terminal == 2:
 			done = True
 			reward = 10
 		elif terminal == 3:
 			done = True
 			reward = 0
+			illegal = False
 
-		return self.getState(), reward, done, self.legalMoves()
+		return self.getState(), reward, done, illegal
