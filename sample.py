@@ -66,6 +66,7 @@ def legal(board, curr):
 
 # choose a move to play
 def play():
+
     print_board(boards)
     print("Current Board: %d" % curr)
 
@@ -73,16 +74,22 @@ def play():
     legal_moves = legal(boards, curr)
     state = getState(boards, curr)
     Q_values = model.predict(state)
+    print(state)
     print(Q_values)
     for i in range(Q_values.shape[1]):
         if (i+1) not in legal_moves:
-            Q_values[0][i] = -10
+            Q_values[0][i] = -100
     action = np.argmax(Q_values)
     print(Q_values)
     n = action + 1
     print("Legal Moves:", end = " ")
     print(legal_moves)
     print("Moved %d\n" % n)
+    # print_board(boards)
+    # print(boards)
+    # n = np.random.randint(1,10)
+    # while boards[curr][n] != 0:
+    #     np.random.randint(1,10)
 
     # print("playing", n)
     place(curr, n, 1) #plave(board, move, x/0)

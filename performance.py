@@ -16,7 +16,7 @@ def epsilon_greedy(model, nA, epsilon, state):
 	action = np.random.choice(nA, p = A)
 	return action
 
-def performance(env, model, num_episodes = 100):
+def performance(env, model, num_episodes = 1000):
 	print("Testing the agent for %d episodes!" % num_episodes)
 
 	rewards = []
@@ -24,16 +24,23 @@ def performance(env, model, num_episodes = 100):
 		env.reset()
 		state = env.getState()
 		for t in itertools.count():
+			# env.printBoard()
+			# print("Current Board:", end = " ")
+			# print(env.getNextGrid())
+			# print(state)
 			state = np.asarray(state).reshape(1,82)
 			Q_values = model.predict(state)
+			# print(Q_values)
 			legal_moves = env.legalMoves()
 			for i in range(Q_values.shape[1]):
 				if (i+1) not in legal_moves:
-					Q_values[0][i] = -10
+					Q_values[0][i] = -100
+			# print(Q_values)
 			action = np.argmax(Q_values)
+			# print("Legal Moves: ", end = " ")
+			# print(env.legalMoves())
+			# print("Moved: %d" % (action +1))
 			next_state, reward, done, illegal = env.step(action + 1)
-			# if illegal:
-			# 	raise ValueError("Illegal Move.")
 			if done:
 				rewards.append(reward)
 				break
@@ -72,7 +79,6 @@ def show_games(env, model, num_episodes = 10):
 			print("Legal moves:", end = " ")
 			print(legal_moves)
 			print("Move: %d" % (action + 1))
-			time.sleep(30)
 			if done:
 				if reward == 10:
 					print("You win!")

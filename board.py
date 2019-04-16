@@ -99,7 +99,7 @@ class UltimateTicTacToe():
 		row = (move-1) // 3
 		column = move - row*3 - 1
 
-		self._board[self._next_grid-1][row][column] = 1
+		self._board[self._next_grid-1][row][column] = 2
 		self._next_grid = move
 
 	def step(self, move):
@@ -114,19 +114,19 @@ class UltimateTicTacToe():
 			illegal = True
 			return self.getState(), reward, done, illegal
 		else:
-			self._board[self._next_grid-1][row][column] = 2
+			self._board[self._next_grid-1][row][column] = 1
 			self._next_grid = move
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)
 		if terminal == 1:
 			done = True
-			reward = -10
+			reward = 10
 			illegal = False
 			return self.getState(), reward, done, illegal
 		elif terminal == 2:
 			done = True
-			reward = 10
+			reward = -10
 			illegal = False
 			return self.getState(), reward, done, illegal
 		elif terminal == 3:
@@ -146,11 +146,12 @@ class UltimateTicTacToe():
 			illegal = False
 		elif terminal == 1:
 			done = True
-			reward = -10
+			reward = 10
 			illegal = False
 		elif terminal == 2:
 			done = True
-			reward = 10
+			reward = -10
+			illegal = False
 		elif terminal == 3:
 			done = True
 			reward = 0
