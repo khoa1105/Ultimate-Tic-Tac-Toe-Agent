@@ -1,10 +1,12 @@
 import numpy as np
+from keras.models import load_model
 
 class UltimateTicTacToe():
 	def __init__(self):
 		self._board = np.zeros((9,3,3), dtype = "int8")
 		self._next_grid = np.random.randint(1,10)
-		self.play()
+		self._model = load_model("TTTv1.h5")
+		#self.play(self.getState())
 
 	def printBoard(self):
 		for i in range(9):
@@ -37,7 +39,7 @@ class UltimateTicTacToe():
 	def reset(self):
 		self._board = np.zeros((9,3,3), dtype = "int8")
 		self._next_grid = 0
-		self.play()
+		#self.play(self.getState())
 
 	def check_victory(self, grid):
 		#Check rows
@@ -92,13 +94,33 @@ class UltimateTicTacToe():
 			return 3
 		return 0
 
-	def play(self):
+	def play(self,state):
+		state = np.asarray(state).reshape(1,82)
+		Q_values = self._model.predict(state)
 		moves = self.legalMoves()
-		move = np.random.choice(moves, 1)[0]
+		probabilities = []
+
+		#mask illegal moves Q values to -100 
+		for i in range(Q_values.shape[1]):
+			if (i+1) not in moves:
+				Q_values[0][i] = -100
+		#epsilon greedy
+		for i in range(Q_values.shape[1]):
+			if (i+1) in moves:
+				probabilities.append(0.2/len(moves))
+			else:
+				probabilities.append(0)
+
+		probabilities[np.argmax(Q_values)] += 0.8
+
+		action = np.random.choice(Q_values.shape[1], p=probabilities)
+		move = action + 1
 
 		row = (move-1) // 3
 		column = move - row*3 - 1
 
+		if move < 1 or move > 9 or self._board[self._next_grid-1][row][column] != 0:
+			raise ValueError("Illegal Bot")
 		self._board[self._next_grid-1][row][column] = 2
 		self._next_grid = move
 
@@ -136,7 +158,7 @@ class UltimateTicTacToe():
 			return self.getState(), reward, done, illegal
 		
 		#X move
-		self.play()
+		self.play(self.getState())
 
 		#Check for terminal state
 		terminal = self.terminal(self._board)

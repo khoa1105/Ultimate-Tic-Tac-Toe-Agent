@@ -81,8 +81,8 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 	experiences = []
 	rewards = []
 	#Initialize model
-	if os.path.isfile("TTTAgent.h5") and os.path.isfile("TTTEpisodes.txt"):
-		model = load_model("TTTAgent.h5")
+	if os.path.isfile("TTTv2.h5") and os.path.isfile("TTTEpisodes.txt"):
+		model = load_model("TTTv2.h5")
 		file = open("TTTEpisodes.txt", "r")
 		data = file.read()
 		start_episode = int(data)
@@ -130,7 +130,7 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 				experiences.clear()
 		#For every 10k episodes, save the model
 		if i % 10000 == 0 and i != start_episode:
-			model.save("TTTAgent.h5")
+			model.save("TTTv1.h5")
 			file = open("TTTEpisodes.txt", "w")
 			file.write(str(i))
 			file.close()
@@ -138,6 +138,12 @@ def DeepQLearning(env, num_episodes, gamma=0.99, initial_epsilon=1, final_epsilo
 		#Reset game
 		env.reset()
 		state = env.getState()
+		#coin toss to see who goes first
+		toss = np.random.randint(0,2)
+		#If coin toss = 0, the opponent play first
+		if toss = 0:
+			env.play()
+			state = env.getState()
 		
 		#Generate episode
 		for t in itertools.count():
